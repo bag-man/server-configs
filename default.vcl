@@ -28,13 +28,23 @@ backend itsback {
     .port = "8082";
 }
 
+backend advgraph {
+    .host = "127.0.0.1";
+    .port = "8083";
+}
+
 sub vcl_recv {
   # Happens before we check if we have this in cache already.
   #
   # Typically you clean up the request here, removing cookies you don't need,
   # rewriting the request, etc.
   if (req.http.host ~ "^(.*\.)?owen\.cymru$") {
-    set req.backend_hint = www;
+    # if (req.url ~ "^/advgraph")  {
+    if (req.http.host ~ "^uni")  {
+      set req.backend_hint = advgraph;
+    } else {
+      set req.backend_hint = www;
+    }
   }
 
   if (req.http.host ~ "^(.*\.)?apibadg\.es$") {
@@ -44,6 +54,7 @@ sub vcl_recv {
   if (req.http.host ~ "^(.*\.)?itsback\.at$") {
     set req.backend_hint = itsback;
   }
+
 }
 
 sub vcl_backend_response {
