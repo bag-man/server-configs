@@ -13,24 +13,14 @@
 vcl 4.0;
 
 # Default backend definition. Set this to point to your content server.
-backend www {
+backend files {
     .host = "127.0.0.1";
     .port = "8080";
 }
 
-backend apibadges {
+backend www {
     .host = "127.0.0.1";
-    .port = "8081";
-}
-
-backend itsback {
-    .host = "127.0.0.1";
-    .port = "8082";
-}
-
-backend advgraph {
-    .host = "127.0.0.1";
-    .port = "8083";
+    .port = "2368";
 }
 
 sub vcl_recv {
@@ -40,19 +30,11 @@ sub vcl_recv {
   # rewriting the request, etc.
   if (req.http.host ~ "^(.*\.)?owen\.cymru$") {
     # if (req.url ~ "^/advgraph")  {
-    if (req.http.host ~ "^uni")  {
-      set req.backend_hint = advgraph;
+    if (req.http.host ~ "^files")  {
+      set req.backend_hint = files;
     } else {
       set req.backend_hint = www;
     }
-  }
-
-  if (req.http.host ~ "^(.*\.)?apibadg\.es$") {
-    set req.backend_hint = apibadges;
-  }
-
-  if (req.http.host ~ "^(.*\.)?itsback\.at$") {
-    set req.backend_hint = itsback;
   }
 
 }
