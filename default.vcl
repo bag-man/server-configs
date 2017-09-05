@@ -23,21 +23,46 @@ backend www {
     .port = "2368";
 }
 
+backend candida {
+    .host = "127.0.0.1";
+    .port = "3000";
+}
+
+
+# /usr/lib/varnish/vmods/
+import basicauth;
+
 sub vcl_recv {
   # Happens before we check if we have this in cache already.
   #
   # Typically you clean up the request here, removing cookies you don't need,
   # rewriting the request, etc.
+  #Basic aWJlcnM6eHlsaXRvbA==
+
+
+
   if (req.http.host ~ "^(.*\.)?owen\.cymru$") {
     # if (req.url ~ "^/advgraph")  {
     if (req.http.host ~ "^files")  {
       set req.backend_hint = files;
+    } else if (req.http.host ~ "^candida") {
+      if (!basicauth.match("/var/www/.htpasswd", req.http.Authorization)) {
+        return (synth(401, "Restricted"));
+      }
+      set req.backend_hint = candida;
     } else {
       set req.backend_hint = www;
     }
   }
 
 }
+
+sub vcl_synth {
+   if (resp.status == 401) {
+       set resp.http.WWW-Authenticate = {"Basic realm="Restricted area""};
+   }
+}
+
 
 sub vcl_backend_response {
     # Happens after we have read the response headers from the backend.
