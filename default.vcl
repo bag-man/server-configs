@@ -30,7 +30,6 @@ backend candida {
 
 
 # /usr/lib/varnish/vmods/
-import basicauth;
 
 sub vcl_recv {
   # Happens before we check if we have this in cache already.
@@ -46,10 +45,9 @@ sub vcl_recv {
     if (req.http.host ~ "^files")  {
       set req.backend_hint = files;
     } else if (req.http.host ~ "^candida") {
-      if (!basicauth.match("/var/www/.htpasswd", req.http.Authorization)) {
-        return (synth(401, "Restricted"));
-      }
       set req.backend_hint = candida;
+    } else if (req.http.host ~ "^vlog") {
+      return (synth(302, "https://www.youtube.com/channel/UCgUh0PuD7_I5voGfbSd36LA"));
     } else {
       set req.backend_hint = www;
     }
@@ -58,9 +56,11 @@ sub vcl_recv {
 }
 
 sub vcl_synth {
-   if (resp.status == 401) {
-       set resp.http.WWW-Authenticate = {"Basic realm="Restricted area""};
-   }
+  if (resp.status == 301 || resp.status == 302) {
+      set resp.http.location = resp.reason;
+      set resp.reason = "Moved";
+      return (deliver);
+  }
 }
 
 
