@@ -12,10 +12,14 @@
 # new 4.0 format.
 vcl 4.0;
 
-# Default backend definition. Set this to point to your content server.
-backend files {
+backend httpd {
     .host = "127.0.0.1";
     .port = "8080";
+}
+
+backend simple {
+    .host = "127.0.0.1";
+    .port = "8081";
 }
 
 backend www {
@@ -28,28 +32,32 @@ backend candida {
     .port = "3000";
 }
 
-
-# /usr/lib/varnish/vmods/
-
 sub vcl_recv {
   # Happens before we check if we have this in cache already.
   #
   # Typically you clean up the request here, removing cookies you don't need,
   # rewriting the request, etc.
   #Basic aWJlcnM6eHlsaXRvbA==
-
-
+  if (req.http.host ~ "^(.*\.)?whut.tv$") {
+      set req.backend_hint = simple;
+  }
 
   if (req.http.host ~ "^(.*\.)?owen\.cymru$") {
-    # if (req.url ~ "^/advgraph")  {
     if (req.http.host ~ "^files")  {
-      set req.backend_hint = files;
+      set req.backend_hint = httpd;
     } else if (req.http.host ~ "^candida") {
       set req.backend_hint = candida;
     } else if (req.http.host ~ "^vlog") {
       return (synth(302, "https://www.youtube.com/channel/UCgUh0PuD7_I5voGfbSd36LA"));
+    } else if (req.http.host ~ "^tv") {
+      set req.backend_hint = simple;
     } else {
-      set req.backend_hint = www;
+      if (req.url ~ "^/keybase.txt") {
+        set req.url = "/keybase.txt";
+        set req.backend_hint = httpd;
+      } else {
+        set req.backend_hint = www;
+      }
     }
   }
 
