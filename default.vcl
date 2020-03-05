@@ -11,6 +11,7 @@
 # Marker to tell the VCL compiler that this VCL has been adapted to the
 # new 4.0 format.
 vcl 4.0;
+import std;
 
 backend httpd {
     .host = "127.0.0.1";
@@ -32,21 +33,36 @@ backend candida {
     .port = "3000";
 }
 
+backend spotter {
+    .host = "127.0.0.1";
+    .port = "1312";
+}
+
 sub vcl_recv {
   # Happens before we check if we have this in cache already.
   #
   # Typically you clean up the request here, removing cookies you don't need,
   # rewriting the request, etc.
   #Basic aWJlcnM6eHlsaXRvbA==
+
+  if ((client.ip != "127.0.0.1" && std.port(server.ip) == 80) &&
+      (req.http.host ~ "(owen.cymru|spotter.owen.cymru|whut.tv)")) {
+    set req.http.x-redir = "https://" + req.http.host + req.url;
+    return (synth(750, ""));
+  }
+
   if (req.http.host ~ "^(.*\.)?whut.tv$") {
       set req.backend_hint = simple;
   }
+
 
   if (req.http.host ~ "^(.*\.)?owen\.cymru$") {
     if (req.http.host ~ "^files")  {
       set req.backend_hint = httpd;
     } else if (req.http.host ~ "^candida") {
       set req.backend_hint = candida;
+    } else if (req.http.host ~ "^spotter") {
+      set req.backend_hint = spotter;
     } else if (req.http.host ~ "^vlog") {
       return (synth(302, "https://www.youtube.com/channel/UCgUh0PuD7_I5voGfbSd36LA"));
     } else if (req.http.host ~ "^tv") {
@@ -64,6 +80,12 @@ sub vcl_recv {
 }
 
 sub vcl_synth {
+  if (resp.status == 750) {
+    // Redirect to HTTPS with 301 status.
+    set resp.status = 301;
+    set resp.http.Location = req.http.x-redir;
+    return(deliver);
+  }
   if (resp.status == 301 || resp.status == 302) {
       set resp.http.location = resp.reason;
       set resp.reason = "Moved";
