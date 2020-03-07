@@ -1,0 +1,2 @@
+ docker run -d --restart always --name ghost -p 3001:2368 -v /home/owg1/Projects/ghost-new:/var/lib/ghost ghost:0.11-alpine
+
