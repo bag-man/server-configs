@@ -1,29 +1,25 @@
 [Unit]
 Description=Google Drive (rclone)
-AssertPathIsDirectory=/home/owg1/Drive
+AssertPathIsDirectory=/mnt/odrive
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/rclone mount \
-        --config=/home/owg1/.config/rclone/rclone.conf \
-        --cache-tmp-upload-path=/tmp/rclone/upload \
-        --cache-chunk-path=/tmp/rclone/chunks \
-        --allow-other \
-        --cache-workers=8 \
-        --cache-writes \
-        --cache-dir=/tmp/rclone/vfs \
-        --cache-db-path=/tmp/rclone/db \
-        --no-modtime \
-        --drive-use-trash \
-        --stats=0 \
-        --checkers=16 \
-        --bwlimit=40M \
-        --dir-cache-time=60m \
-        --cache-info-age=60m drive:/ /home/owg1/Drive
-ExecStop=/bin/fusermount -u /home/owg1/Drive
+ExecStart=/usr/bin/rclone mount odrive: /mnt/odrive \
+          --allow-non-empty \
+          --allow-other \
+          --dir-cache-time 1000h \
+          --log-level INFO \
+          --log-file /mnt/rclone.log \
+          --poll-interval 15s \
+          --umask 002 \
+          --user-agent iasdoih2h3f88293fhe2pdj091jd2 \
+          --cache-dir=/mnt/rclone-cache \
+          --vfs-cache-mode full \
+          --vfs-cache-max-size 1G \
+          --vfs-cache-max-age 336h
+ExecStop=/bin/fusermount -uz /mnt/odrive
 Restart=always
 RestartSec=10
 
 [Install]
 WantedBy=default.target
-
